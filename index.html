@@ -3,6 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0b1120">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>OSHS Bell Schedule</title>
 <style>
   :root{
@@ -575,16 +579,102 @@
     border-radius: 8px; border: 1px solid rgba(127,127,127,.25);
     background: var(--panel-2); color: var(--ink); padding: 8px 10px;
   }
+
+  /* ================= Basic mode: the big pass timer (10/10 rule) ================= */
+  #ambient[data-cards="0"] .greeting, #ambient[data-cards="0"] #passCard{ display: none; }
+  #ambient[data-cards="1"] .pass-hero{ display: none; }
+  .pass-hero{
+    flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; gap: .25em; padding: 0 1vw; font-size: clamp(14px, min(1.5vw, 2.6vh), 32px);
+  }
+  .ph-badge{
+    font-weight: 800; letter-spacing: .08em; text-transform: uppercase; font-size: .8em; opacity: .95;
+    padding: .2em .8em; border-radius: 999px; background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.35);
+  }
+  .ph-title{
+    font-family: Georgia, 'Noto Serif', 'Times New Roman', serif; font-weight: 700; line-height: 1.1;
+    font-size: clamp(30px, min(4.4vw, 7vh), 88px); text-shadow: 0 3px 18px rgba(0,0,0,.35);
+  }
+  .ph-sub{ font-size: clamp(16px, min(2vw, 3.3vh), 42px); text-shadow: 0 2px 10px rgba(0,0,0,.3); min-height: 1.2em; }
+  .ph-state{
+    margin-top: .5em; padding: .1em .75em; border-radius: 999px; font-weight: 900; letter-spacing: .03em; color: #fff;
+    font-size: clamp(24px, min(3.9vw, 7.2vh), 96px); line-height: 1.15; background: #64748b; white-space: nowrap; max-width: 100%;
+    box-shadow: 0 6px 24px rgba(0,0,0,.35); border: 3px solid rgba(255,255,255,.55);
+  }
+  .pass-hero[data-state="open"] .ph-state{ background: #16a34a; }
+  .pass-hero[data-state="closed"] .ph-state{ background: #dc2626; }
+  .pass-hero[data-state="break"] .ph-state{ background: #2563eb; }
+  .ph-count{
+    font-family: 'Courier New', monospace; font-weight: 800; line-height: 1.1; margin-top: .1em;
+    font-size: clamp(26px, min(3.6vw, 7vh), 96px); text-shadow: 0 3px 16px rgba(0,0,0,.35); white-space: nowrap; max-width: 100%;
+  }
+  .ph-barwrap{ width: min(94%, 62em); margin-top: .6em; }
+  .ph-bar{ position: relative; height: clamp(22px, 3.6vh, 46px); }
+  .ph-zones{
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; overflow: hidden; border-radius: 999px;
+    border: 2px solid rgba(255,255,255,.6); box-shadow: 0 4px 16px rgba(0,0,0,.3);
+  }
+  .ph-zones .z{ display: block; height: 100%; }
+  .ph-zones .z.closed{ background: #dc2626; }
+  .ph-zones .z.open{ background: #16a34a; }
+  .ph-zones .z.break{ background: #2563eb; }
+  .ph-zones .z.none{ background: #64748b; }
+  .ph-elapsed{ position: absolute; top: 0; left: 0; bottom: 0; background: rgba(255,255,255,.34); }
+  .ph-now{
+    position: absolute; top: -30%; bottom: -30%; width: 7px; margin-left: -3.5px; border-radius: 4px; background: #fff;
+    box-shadow: 0 0 14px rgba(255,255,255,.95), 0 0 0 2px rgba(0,0,0,.35);
+  }
+  .ph-marks{ position: relative; height: 3.6em; margin-top: .35em; font-size: .78em; font-weight: 700; text-shadow: 0 1px 6px rgba(0,0,0,.45); }
+  .ph-marks span{ position: absolute; top: 0; white-space: nowrap; transform: translateX(-50%); }
+  .ph-marks span.k::before{ content: ""; display: block; width: 2px; height: .5em; margin: 0 auto .15em; background: rgba(255,255,255,.85); }
+  .ph-marks .m0, .ph-marks .m1{ top: 1.9em; opacity: .9; font-weight: 600; }
+  .ph-marks .m0{ left: 0; transform: none; }
+  .ph-marks .m1{ right: 0; left: auto; transform: none; }
+  .ph-legend{ font-size: .9em; opacity: .95; max-width: 42em; margin-top: .4em; text-shadow: 0 1px 8px rgba(0,0,0,.4); min-height: 1.2em; }
+
+  /* ================= Demo bar ================= */
+  .demo-bar{
+    position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 96; max-width: 96vw;
+    display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; justify-content: center;
+    background: rgba(2,6,23,.92); color: #fff; border: 2px solid #f59e0b; border-radius: 14px; padding: 8px 12px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.5); font-size: .85rem;
+  }
+  .demo-tag{ background: #f59e0b; color: #1b1400; font-weight: 900; border-radius: 6px; padding: 2px 8px; letter-spacing: .08em; }
+  .demo-clock{ font-family: 'Courier New', monospace; font-weight: 800; font-size: 1.1rem; min-width: 7.6em; text-align: center; }
+  .demo-group{ display: inline-flex; flex-wrap: wrap; gap: 4px; }
+  .demo-bar button{
+    font: inherit; font-weight: 700; cursor: pointer; color: #fff; background: #1e293b; border: 1px solid rgba(255,255,255,.3);
+    border-radius: 8px; padding: 6px 10px; touch-action: manipulation;
+  }
+  .demo-bar button.on{ background: #f59e0b; color: #1b1400; border-color: #f59e0b; }
+  .demo-bar .demo-exit{ background: #b91c1c; border-color: #fca5a5; }
+
+  /* ================= Welcome, help, QR ================= */
+  .welcome-card{
+    background: var(--bg-b); color: var(--ink); border-radius: 18px; width: min(560px, 100%); max-height: 100%; overflow-y: auto;
+    padding: 20px 22px; border: 1px solid rgba(127,127,127,.35); box-shadow: 0 24px 70px rgba(0,0,0,.55);
+  }
+  .welcome-card h1{ margin: 0 0 4px; font-size: 1.6rem; }
+  .welcome-card h3{ margin: 16px 0 6px; font-size: 1rem; color: var(--accent); }
+  .welcome-lead{ margin: 0 0 6px; color: var(--ink-dim); font-size: .92rem; }
+  .welcome-err{ color: var(--danger); font-size: .85rem; min-height: 1.2em; margin-top: 8px; }
+  .welcome-go{ font: inherit; font-weight: 800; font-size: 1.05rem; padding: 10px 28px; border-radius: 999px; border: none; cursor: pointer; background: #22c55e; color: #04210d; }
+  #welBands button{ flex: 1 1 45%; padding: 12px 8px; font-weight: 800; }
+  #welBands button.active{ background: var(--accent); color: #08243b; border-color: var(--accent); }
+  .help-list{ margin: 4px 0 10px 18px; padding: 0; line-height: 1.5; }
+  .help-list li{ margin-bottom: 8px; }
+  .qr-box svg{ width: 190px; height: 190px; display: block; border-radius: 8px; background: #fff; }
+  .qr-box:empty{ display: none; }
 </style>
 </head>
 <body data-theme="dark">
 
 <div class="wrap">
 
-  <div class="col-ambient" id="ambient" data-tod="day">
+  <div class="col-ambient" id="ambient" data-tod="day" data-cards="0">
     <div class="orbs"><div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div></div>
 
-    <div class="ambient-top">
+    <div class="ambient-top hidden" id="ambientTop">
       <div class="pass-card state-none" id="passCard">
         <div class="pc-icon">🚻</div>
         <div>
@@ -597,6 +687,22 @@
     </div>
     <div class="wx-alert hidden" id="wxAlert"></div>
 
+    <div class="pass-hero" id="passHero" data-state="none">
+      <div class="ph-badge hidden" id="phBadge"></div>
+      <div class="ph-title" id="phTitle">&nbsp;</div>
+      <div class="ph-sub" id="phSub"></div>
+      <div class="ph-state" id="phState"></div>
+      <div class="ph-count" id="phCount"></div>
+      <div class="ph-barwrap hidden" id="phBarWrap">
+        <div class="ph-bar">
+          <div class="ph-zones" id="phZones"></div>
+          <div class="ph-now" id="phNow"></div>
+        </div>
+        <div class="ph-marks" id="phMarks"></div>
+      </div>
+      <div class="ph-legend" id="phLegend"></div>
+    </div>
+
     <div class="greeting">
       <div class="greet-head"><span class="greet-emoji" id="greetEmoji">☀️</span><span class="greet-title" id="greetTitle">Welcome</span></div>
       <div class="greet-sub" id="greetSub"></div>
@@ -604,7 +710,7 @@
       <div class="stage" id="stage"><div class="stage-card" id="stageCard"></div></div>
     </div>
 
-    <div class="hp-panel">
+    <div class="hp-panel hidden" id="hpPanel">
       <div class="pass-slots" id="passSlots"></div>
       <button type="button" id="ringDistractorBtn" class="ding-btn">🔔 Ding the Bell</button>
     </div>
@@ -675,10 +781,101 @@
   <div class="pin-grid" id="pinGrid"></div>
 </div>
 
+
+<div id="demoBar" class="demo-bar hidden" role="region" aria-label="Demo controls">
+  <span class="demo-tag">DEMO</span>
+  <span class="demo-clock" id="demoClock">--:--:--</span>
+  <span class="demo-group" id="demoSpeeds">
+    <button type="button" data-speed="0" title="Pause">⏸</button>
+    <button type="button" data-speed="1">×1</button>
+    <button type="button" data-speed="10">×10</button>
+    <button type="button" data-speed="60">×60</button>
+    <button type="button" data-speed="300">×300</button>
+  </span>
+  <span class="demo-group" id="demoJumps">
+    <button type="button" data-jump="start">Day start</button>
+    <button type="button" data-jump="opens">Pass opens</button>
+    <button type="button" data-jump="closing">Pass closing</button>
+    <button type="button" data-jump="bell">Bell</button>
+    <button type="button" data-jump="break">Break</button>
+    <button type="button" data-jump="lunch">Lunch</button>
+    <button type="button" data-jump="after">After school</button>
+  </span>
+  <button type="button" id="demoExit" class="demo-exit">Exit demo</button>
+</div>
+
+<div id="welcome" class="modal-backdrop hidden" style="z-index:130;">
+  <div class="welcome-card">
+    <h1>Welcome 👋</h1>
+    <p class="welcome-lead">Three quick choices and your board is ready. You can change everything later in ⚙.</p>
+    <h3>1. Your schedule</h3>
+    <div class="btn-row" id="welBands"></div>
+    <h3>2. Pass window (10/10 rule)</h3>
+    <div class="field-row"><span>Passes closed in the first (min)</span><input type="number" id="welClosedStart" class="num-input" min="0" max="60"></div>
+    <div class="field-row"><span>Passes closed in the last (min)</span><input type="number" id="welClosedEnd" class="num-input" min="0" max="60"></div>
+    <h3>3. A PIN for the settings</h3>
+    <div class="field-row"><span>PIN (4&ndash;8 digits)</span><input type="password" id="welPin" class="num-input" style="width:130px;" inputmode="numeric" maxlength="8" autocomplete="new-password"></div>
+    <div class="welcome-err" id="welErr"></div>
+    <div class="btn-row" style="justify-content:flex-end; margin-top:12px;"><button type="button" id="welStart" class="welcome-go">Start</button></div>
+  </div>
+</div>
+
+<div id="helpModal" class="modal-backdrop hidden" style="z-index:125;">
+  <div class="modal-window" style="width:min(720px,100%);">
+    <div class="modal-head"><h1>Quick start</h1><button type="button" id="helpCloseBtn">Close</button></div>
+    <div class="modal-body help-body" style="column-count:1;">
+      <ol class="help-list">
+        <li><b>Open the page on the board.</b> Double-tap an empty spot to go full screen.</li>
+        <li><b>Pick your schedule</b> at the top right (9th&ndash;12th or 10th&ndash;11th grade). The page knows the A/B days and the bell times by itself.</li>
+        <li><b>The big timer is the 10/10 rule.</b> Green = hall passes are open, red = closed (the first and the last minutes of class), blue = break. The bar shows where you are in the class.</li>
+        <li><b>The ⚙ button</b> (bottom right) opens the settings with your PIN. Change the 10/10 minutes there, or turn on extras: hall pass buttons and log, sounds, rotating cards, weather.</li>
+        <li><b>Lost?</b> ⚙ &rarr; Quick setup &rarr; <b>Basic</b> brings back the simple screen.</li>
+      </ol>
+      <div class="override-note">Everything is saved on this device only. Nothing is sent anywhere unless you connect a Google Sheet for the hall pass log.</div>
+    </div>
+  </div>
+</div>
+
 <div id="settingsModal" class="modal-backdrop hidden">
   <div class="modal-window">
     <div class="modal-head"><h1>Settings</h1><button type="button" id="settingsCloseBtn">Close</button></div>
     <div class="modal-body" id="settingsBody">
+
+    <div class="section" id="secQuick">
+      <h2>Quick setup</h2>
+      <div class="btn-row">
+        <button type="button" id="presetBasic">Basic</button>
+        <button type="button" id="presetFull">Everything</button>
+        <button type="button" id="helpBtn">Quick start guide</button>
+      </div>
+      <div class="override-note" style="margin-top:8px;"><b>Basic</b> is the simple screen: clock, schedule, progress bars and the big pass timer. Turn on only the extras you want:</div>
+      <div class="toggle-row"><span>Hall pass buttons and log</span><label class="switch"><input type="checkbox" id="exHallPass"><span class="slider"></span></label></div>
+      <div class="toggle-row"><span>&ldquo;Ding the Bell&rdquo; button</span><label class="switch"><input type="checkbox" id="exDing"><span class="slider"></span></label></div>
+      <div class="toggle-row"><span>Sound alerts (warnings and bell)</span><label class="switch"><input type="checkbox" id="exSounds"><span class="slider"></span></label></div>
+      <div class="toggle-row"><span>Rotating cards on the left (facts, riddles, calendar, announcements, day arc)</span><label class="switch"><input type="checkbox" id="exCards"><span class="slider"></span></label></div>
+      <div class="toggle-row"><span>Lesson phases (Warm-up, Focus time, Wrap up, Last 2 minutes)</span><label class="switch"><input type="checkbox" id="stPhases"><span class="slider"></span></label></div>
+      <div class="toggle-row"><span>Orlando weather</span><label class="switch"><input type="checkbox" id="stWeather"><span class="slider"></span></label></div>
+      <div class="toggle-row"><span>Severe weather warnings</span><label class="switch"><input type="checkbox" id="stAlerts"><span class="slider"></span></label></div>
+      <div class="btn-row" style="margin-top:8px;"><button id="stLoadWxBtn">Refresh weather</button></div>
+      <div class="perm-note" id="wxStatus"></div>
+    </div>
+
+    <div class="section" id="secWindow">
+      <h2>Pass window (10/10 rule)</h2>
+      <div class="toggle-row">
+        <span>Use &ldquo;passes closed&rdquo; windows</span>
+        <label class="switch"><input type="checkbox" id="passUseWindow"><span class="slider"></span></label>
+      </div>
+      <div class="field-row">
+        <span>Closed during the first (min)</span>
+        <input type="number" id="passClosedStart" class="num-input" min="0" max="60">
+      </div>
+      <div class="field-row">
+        <span>Closed during the last (min)</span>
+        <input type="number" id="passClosedEnd" class="num-input" min="0" max="60">
+      </div>
+      <div class="override-note">The big timer on the board shows when passes are open or closed. Set both to 0 to switch the rule off.</div>
+    </div>
 
     <div class="section">
       <h2>Override Today's Schedule</h2>
@@ -691,7 +888,7 @@
       </div>
     </div>
 
-    <div class="section">
+    <div class="section" data-needs="sounds">
       <h2>Notifications</h2>
       <div class="btn-row" style="margin-bottom:10px;">
         <button class="grant" id="permBtn">Enable browser notifications</button>
@@ -719,7 +916,7 @@
       <div class="perm-note" id="permNote"></div>
     </div>
 
-    <div class="section">
+    <div class="section" data-needs="sounds">
       <h2>Alert Sound</h2>
 
       <h3>Warning Sound <span style="font-weight:400; text-transform:none; letter-spacing:0;">(for the 15/10/5-minute notices above)</span></h3>
@@ -756,7 +953,7 @@
       </div>
     </div>
 
-    <div class="section">
+    <div class="section" data-needs="ding">
       <h2>Attention Signal</h2>
       <div class="override-note">
         A manual bell you can trigger any time &mdash; independent of the actual schedule &mdash;
@@ -775,7 +972,7 @@
       </div>
     </div>
 
-    <div class="section">
+    <div class="section" data-needs="sounds">
       <h2>Sound Library</h2>
       <div class="override-note">
         Add audio files already saved on this device (downloaded through the board's browser,
@@ -849,27 +1046,22 @@
     </div>
 
 
-    <div class="section">
+    <div class="section" data-needs="cards">
       <h2>Left screen</h2>
-      <div class="override-note" style="margin-top:0;">What the left side shows besides the hall pass. Switch off anything you don't want.</div>
-      <div class="toggle-row"><span>Lesson phases (Warm-up, Focus time, Wrap up, Last 2 minutes)</span><label class="switch"><input type="checkbox" id="stPhases"><span class="slider"></span></label></div>
+      <div class="override-note" style="margin-top:0;">What the rotating cards on the left may show. Switch off anything you don't want.</div>
       <div class="toggle-row"><span>Day arc (sun moving across the school day)</span><label class="switch"><input type="checkbox" id="stArc"><span class="slider"></span></label></div>
       <div class="toggle-row"><span>Tech facts and phrases</span><label class="switch"><input type="checkbox" id="stFacts"><span class="slider"></span></label></div>
       <div class="toggle-row"><span>Java riddles (answer appears after 30 seconds)</span><label class="switch"><input type="checkbox" id="stRiddles"><span class="slider"></span></label></div>
       <div class="toggle-row"><span>Announcements from the "Messages" tab</span><label class="switch"><input type="checkbox" id="stMessages"><span class="slider"></span></label></div>
       <div class="toggle-row"><span>School calendar numbers</span><label class="switch"><input type="checkbox" id="stCalendar"><span class="slider"></span></label></div>
-      <div class="toggle-row"><span>Orlando weather</span><label class="switch"><input type="checkbox" id="stWeather"><span class="slider"></span></label></div>
-      <div class="toggle-row"><span>Severe weather warnings</span><label class="switch"><input type="checkbox" id="stAlerts"><span class="slider"></span></label></div>
       <div class="field-row">
         <span>Seconds per card</span>
         <input type="number" id="stCardSec" class="num-input" min="8" max="90">
       </div>
       <div class="btn-row" style="margin-top:8px;">
         <button id="stLoadMsgBtn">Load announcements</button>
-        <button id="stLoadWxBtn">Refresh weather</button>
       </div>
       <div class="perm-note" id="msgStatus"></div>
-      <div class="perm-note" id="wxStatus"></div>
       <div class="override-note">
         <b>Announcements:</b> the sheet needs a tab named <b>Messages</b>. Column A = the text (for example "Test on Friday!"),
         column B = show from (optional), column C = show until (optional). Dates look like 2026-10-09; leave them empty to show it every day.<br>
@@ -879,23 +1071,11 @@
       </div>
     </div>
 
-    <div class="section">
+    <div class="section" data-needs="hallPass">
       <h2>Hall pass</h2>
       <div class="field-row">
         <span>Number of pass buttons</span>
         <input type="number" id="passSlotsInput" class="num-input" min="1" max="12">
-      </div>
-      <div class="toggle-row">
-        <span>Use "passes closed" windows</span>
-        <label class="switch"><input type="checkbox" id="passUseWindow"><span class="slider"></span></label>
-      </div>
-      <div class="field-row">
-        <span>Closed during the first (min)</span>
-        <input type="number" id="passClosedStart" class="num-input" min="0" max="60">
-      </div>
-      <div class="field-row">
-        <span>Closed during the last (min)</span>
-        <input type="number" id="passClosedEnd" class="num-input" min="0" max="60">
       </div>
       <div class="field-row">
         <span>Turns red after (min out)</span>
@@ -907,7 +1087,7 @@
       </div>
     </div>
 
-    <div class="section">
+    <div class="section" data-needs="hallPass">
       <h2>Hall pass log (Google Sheets)</h2>
       <div class="btn-row">
         <input type="text" id="sheetUrlInput" placeholder="Apps Script web app URL (https://script.google.com/macros/s/.../exec)">
@@ -926,6 +1106,18 @@
       <div id="passRecent" style="margin-top:10px; display:flex; flex-direction:column; gap:6px;"></div>
     </div>
 
+    <div class="section" id="secDemo">
+      <h2>Presentation demo</h2>
+      <div class="override-note" style="margin-top:0;">Runs a pretend school day on a fast clock, so you can show the 10/10 rule and the progress bars in a few minutes. Nothing is saved or sent while it runs. Tip: add <b>?demo=1</b> to the page address to start in demo mode.</div>
+      <div class="btn-row" style="margin-top:8px;"><button type="button" id="demoStartBtn">Start demo</button></div>
+    </div>
+
+    <div class="section" id="secShare">
+      <h2>Share this page</h2>
+      <div id="qrBox" class="qr-box"></div>
+      <div class="perm-note" id="shareUrl"></div>
+    </div>
+
     <div class="section">
       <h2>Security</h2>
       <div class="field-row">
@@ -935,13 +1127,16 @@
       <div class="btn-row" style="margin-top:8px;">
         <button id="savePinBtn">Save PIN</button>
       </div>
-      <div class="perm-note" id="pinSaveMsg">Default PIN is 1234 until you change it.</div>
+      <div class="perm-note" id="pinSaveMsg">This PIN opens the settings. Choose one that only you know.</div>
     </div>
 
     <div class="footer-note">
       All settings are saved on this device (browser IndexedDB), so they survive reloads.
       Times come from the OSHS 2026&ndash;2027 A/B block schedule and bell schedule sheet.
-      Everything needed lives in this single file.
+      Once the board has been opened online it keeps working without internet, and it updates itself outside school hours.
+      <br>Version <span id="appVersion"></span>
+      <div class="perm-note" id="updateNote"></div>
+      <div class="btn-row hidden" id="updateRow" style="margin-top:6px;"><button id="reloadNowBtn" type="button">Reload now</button></div>
     </div>
 
   </div>
@@ -1072,9 +1267,13 @@ function getDefaultSettings(){
     localTimeServerUrl: "",
     manualOffsetSec: 0, // manual fine-tune vs the school's own bell server, in seconds (0.1 steps)
     countdownFormat: "hms", // "hms" = HH:MM:SS, "ms" = MM:SS (for Time Left / Time Passed displays)
+    setupDone: false,            // the welcome screen has been completed on this device
+    extras: {                    // everything beyond the basic screen is opt-in
+      hallPass: false, ding: false, sounds: false, cards: false
+    },
     stage: {                    // the rotating left screen
-      phases: true, arc: true, facts: true, riddles: true, messages: true, calendar: true,
-      weather: true, alerts: true, cardSec: 20,
+      phases: false, arc: true, facts: true, riddles: true, messages: true, calendar: true,
+      weather: false, alerts: false, cardSec: 20,
       messagesList: [],         // announcements loaded from the sheet: { text, from, to }
       wxCache: null             // last weather answer, so it still shows without internet
     },
@@ -1107,23 +1306,35 @@ async function loadSettingsFromIDB(){
   try{
     const saved = await idbGet("appSettings");
     if(!saved || typeof saved !== "object") return defaults;
+    // Settings saved by an older version had every feature on: keep that, and skip the welcome screen.
+    const older = !(saved.extras && typeof saved.extras === "object");
     return {
       ...defaults, ...saved,
       notify: { ...defaults.notify, ...(saved.notify || {}) },
       pass: { ...defaults.pass, ...(saved.pass || {}) },
-      stage: { ...defaults.stage, ...(saved.stage || {}) },
+      stage: { ...defaults.stage, ...(older ? { phases: true, weather: true, alerts: true } : {}), ...(saved.stage || {}) },
+      extras: older ? { hallPass: true, ding: true, sounds: true, cards: true } : { ...defaults.extras, ...saved.extras },
+      setupDone: older ? true : !!saved.setupDone,
       overrides: { ...(saved.overrides && typeof saved.overrides === "object" ? saved.overrides : {}) }
     };
   }catch(e){ return defaults; }
 }
 let settings = getDefaultSettings(); // real values are loaded from IndexedDB near the end of this script
-function saveSettings(){ idbSet("appSettings", settings); }
+const DEMO = { on: false, speed: 1, baseSim: 0, baseReal: 0, backup: null };   // presentation demo (see below)
+function saveSettings(){
+  let toSave = settings;
+  if(DEMO.on && DEMO.backup){      // never keep what happened during a demo: passes, log entries, one-day overrides
+    toSave = { ...settings, pass: { ...settings.pass, active: DEMO.backup.active, queue: DEMO.backup.queue, recent: DEMO.backup.recent }, overrides: DEMO.backup.overrides };
+  }
+  idbSet("appSettings", toSave);
+}
 let soundLibrary = []; // [{ id, name, dataUrl }] — populated async from IndexedDB below
 
 /* ================= Date / time helpers ================= */
 let timeOffsetMs = 0; // added to Date.now() to correct for device clock drift
 
 function appNow(){
+  if(DEMO.on) return new Date(DEMO.baseSim + (Date.now() - DEMO.baseReal) * DEMO.speed);
   return new Date(Date.now() + timeOffsetMs + Math.round((settings.manualOffsetSec || 0) * 1000));
 }
 
@@ -1583,6 +1794,8 @@ function updatePermUI(){
 let lastKeyState = null;
 let firedNotifications = {};
 function checkAndFireNotifications(info, now){
+  if(!settings.extras.sounds) return;
+  if(DEMO.on && DEMO.speed !== 1) return;      // a fast demo clock would skip the sound windows anyway
   const rows = rowsFor(settings.activeBand, info.timeType);
   const nowSeconds = now.getHours()*3600 + now.getMinutes()*60 + now.getSeconds();
   const thresholds = [];
@@ -1646,6 +1859,7 @@ function tickClock(now){
     text = `${pad2(h)}:${pad2(m)}:${pad2(s)}`;
   }
   document.getElementById("clockTime").textContent = text;
+  if(DEMO.on) updateDemoBar(now);
 }
 
 /* ================= Main refresh ================= */
@@ -1961,6 +2175,7 @@ function renderWeatherChip(){
   WX.chipHtml = html;
   chip.innerHTML = html;
   chip.classList.toggle("hidden", !html);
+  syncTopRow();
 }
 async function fetchAlerts(){
   if(!settings.stage.weather || !settings.stage.alerts){ WX.alerts = []; renderAlertBanner(); return; }
@@ -2294,7 +2509,8 @@ function renderAmbient(now, info){
   amb.setAttribute("data-tod", ctx.tod);
   amb.setAttribute("data-phase", ctx.lessonPhase ? ctx.lessonPhase.key : "");
   renderAlertBanner();
-  stageTick(ctx, now);
+  if(settings.extras.cards) stageTick(ctx, now);
+  else renderHero(heroModel(now, info));
 }
 
 /* ---------- "Left screen" settings ---------- */
@@ -2507,10 +2723,12 @@ function completePass(i, atMs){
     dayType: st.dayType || ""
   };
   settings.pass.active[i] = null;
-  settings.pass.recent.unshift(entry);
-  settings.pass.recent.length = Math.min(settings.pass.recent.length, 15);
-  settings.pass.queue.push(entry);
-  if(settings.pass.queue.length > 500) settings.pass.queue.splice(0, settings.pass.queue.length - 500);
+  if(!DEMO.on){                                  // a demo trip is never logged or sent
+    settings.pass.recent.unshift(entry);
+    settings.pass.recent.length = Math.min(settings.pass.recent.length, 15);
+    settings.pass.queue.push(entry);
+    if(settings.pass.queue.length > 500) settings.pass.queue.splice(0, settings.pass.queue.length - 500);
+  }
   saveSettings();
   renderHallPass();
   closePassDialog();
@@ -2671,6 +2889,7 @@ async function postEntry(entry){
   }catch(e){ return false; }
 }
 async function flushLogQueue(){
+  if(DEMO.on) return;
   if(flushingLog) return;
   if(!(settings.pass.sheetUrl || "").trim() || settings.pass.queue.length === 0) return;
   flushingLog = true;
@@ -2992,6 +3211,10 @@ function finishCancel(p, pinOk){
   }
 }
 function openSettings(){
+  syncExtrasUI();
+  syncSettingsVisibility();
+  renderShare();
+  $("appVersion").textContent = APP_VERSION;
   syncStageSettingsUI();
   syncPassSettingsUI();
   renderPassLogUI();
@@ -3046,6 +3269,346 @@ document.addEventListener("click", e => {
     lastTap = { t, x: e.clientX, y: e.clientY };
   }
 });
+
+/* =====================================================================
+   Basic mode (the big 10/10 pass timer), extras, welcome, demo, QR code
+   ===================================================================== */
+const APP_VERSION = "2026.10.12 · Hall Pass Board (web edition)";
+const QRLib=function(){
+// QR Code Generator for JavaScript
+// Copyright (c) 2009 Kazuhiko Arase
+// Licensed under the MIT license:
+// The word 'QR Code' is registered trademark of
+var t=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],f={},c=function(t,r){o=function(t){for(var r=new Array(t),e=0;e<t;e+=1){r[e]=new Array(t);for(var n=0;n<t;n+=1)r[e][n]=null}return r}(i=4*e+17),l(0,0),l(i-7,0),l(0,i-7),s(),h(),d(t,r),e>=7&&v(t),null==a&&(a=p(e,n,u)),w(a,r)},l=function(t,r){for(var e=-1;e<=7;e+=1)if(!(t+e<=-1||i<=t+e))for(var n=-1;n<=7;n+=1)r+n<=-1||i<=r+n||(o[t+e][r+n]=0<=e&&e<=6&&(0==n||6==n)||0<=n&&n<=6&&(0==e||6==e)||2<=e&&e<=4&&2<=n&&n<=4)},h=function(){for(var t=8;t<i-8;t+=1)null==o[t][6]&&(o[t][6]=t%2==0);for(var r=8;r<i-8;r+=1)null==o[6][r]&&(o[6][r]=r%2==0)},s=function(){for(var t=B.getPatternPosition(e),r=0;r<t.length;r+=1)for(var n=0;n<t.length;n+=1){var i=t[r],a=t[n];if(null==o[i][a])for(var u=-2;u<=2;u+=1)for(var f=-2;f<=2;f+=1)o[i+u][a+f]=-2==u||2==u||-2==f||2==f||0==u&&0==f}},v=function(t){for(var r=B.getBCHTypeNumber(e),n=0;n<18;n+=1){var a=!t&&1==(r>>n&1);o[Math.floor(n/3)][n%3+i-8-3]=a}for(n=0;n<18;n+=1){a=!t&&1==(r>>n&1);o[n%3+i-8-3][Math.floor(n/3)]=a}},d=function(t,r){for(var e=n<<3|r,a=B.getBCHTypeInfo(e),u=0;u<15;u+=1){var f=!t&&1==(a>>u&1);u<6?o[u][8]=f:u<8?o[u+1][8]=f:o[i-15+u][8]=f}for(u=0;u<15;u+=1){f=!t&&1==(a>>u&1);u<8?o[8][i-u-1]=f:u<9?o[8][15-u-1+1]=f:o[8][15-u-1]=f}o[i-8][8]=!t},w=function(t,r){for(var e=-1,n=i-1,a=7,u=0,f=B.getMaskFunction(r),c=i-1;c>0;c-=2)for(6==c&&(c-=1);;){for(var g=0;g<2;g+=1)if(null==o[n][c-g]){var l=!1;u<t.length&&(l=1==(t[u]>>>a&1)),f(n,c-g)&&(l=!l),o[n][c-g]=l,-1==(a-=1)&&(u+=1,a=7)}if((n+=e)<0||i<=n){n-=e,e=-e;break}}},p=function(t,r,e){for(var n=A.getRSBlocks(t,r),o=b(),i=0;i<e.length;i+=1){var a=e[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var u=0;for(i=0;i<n.length;i+=1)u+=n[i].dataCount;if(o.getLengthInBits()>8*u)throw"code length overflow. ("+o.getLengthInBits()+">"+8*u+")";for(o.getLengthInBits()+4<=8*u&&o.put(0,4);o.getLengthInBits()%8!=0;)o.putBit(!1);for(;!(o.getLengthInBits()>=8*u||(o.put(236,8),o.getLengthInBits()>=8*u));)o.put(17,8);return function(t,r){for(var e=0,n=0,o=0,i=new Array(r.length),a=new Array(r.length),u=0;u<r.length;u+=1){var f=r[u].dataCount,c=r[u].totalCount-f;n=Math.max(n,f),o=Math.max(o,c),i[u]=new Array(f);for(var g=0;g<i[u].length;g+=1)i[u][g]=255&t.getBuffer()[g+e];e+=f;var l=B.getErrorCorrectPolynomial(c),h=k(i[u],l.getLength()-1).mod(l);for(a[u]=new Array(l.getLength()-1),g=0;g<a[u].length;g+=1){var s=g+h.getLength()-a[u].length;a[u][g]=s>=0?h.getAt(s):0}}var v=0;for(g=0;g<r.length;g+=1)v+=r[g].totalCount;var d=new Array(v),w=0;for(g=0;g<n;g+=1)for(u=0;u<r.length;u+=1)g<i[u].length&&(d[w]=i[u][g],w+=1);for(g=0;g<o;g+=1)for(u=0;u<r.length;u+=1)g<a[u].length&&(d[w]=a[u][g],w+=1);return d}(o,n)};f.addData=function(t,r){var e=null;switch(r=r||"Byte"){case"Numeric":e=M(t);break;case"Alphanumeric":e=x(t);break;case"Byte":e=m(t);break;case"Kanji":e=L(t);break;default:throw"mode:"+r}u.push(e),a=null},f.isDark=function(t,r){if(t<0||i<=t||r<0||i<=r)throw t+","+r;return o[t][r]},f.getModuleCount=function(){return i},f.make=function(){if(e<1){for(var t=1;t<40;t++){for(var r=A.getRSBlocks(t,n),o=b(),i=0;i<u.length;i++){var a=u[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var g=0;for(i=0;i<r.length;i++)g+=r[i].dataCount;if(o.getLengthInBits()<=8*g)break}e=t}c(!1,function(){for(var t=0,r=0,e=0;e<8;e+=1){c(!0,e);var n=B.getLostPoint(f);(0==e||t>n)&&(t=n,r=e)}return r}())},f.createTableTag=function(t,r){t=t||2;var e="";e+='<table style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: "+(r=void 0===r?4*t:r)+"px;",e+='">',e+="<tbody>";for(var n=0;n<f.getModuleCount();n+=1){e+="<tr>";for(var o=0;o<f.getModuleCount();o+=1)e+='<td style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: 0px;",e+=" width: "+t+"px;",e+=" height: "+t+"px;",e+=" background-color: ",e+=f.isDark(n,o)?"#000000":"#ffffff",e+=";",e+='"/>';e+="</tr>"}return e+="</tbody>",e+="</table>"},f.createSvgTag=function(t,r,e,n){var o={};"object"==typeof arguments[0]&&(t=(o=arguments[0]).cellSize,r=o.margin,e=o.alt,n=o.title),t=t||2,r=void 0===r?4*t:r,(e="string"==typeof e?{text:e}:e||{}).text=e.text||null,e.id=e.text?e.id||"qrcode-description":null,(n="string"==typeof n?{text:n}:n||{}).text=n.text||null,n.id=n.text?n.id||"qrcode-title":null;var i,a,u,c,g=f.getModuleCount()*t+2*r,l="";for(c="l"+t+",0 0,"+t+" -"+t+",0 0,-"+t+"z ",l+='<svg version="1.1" xmlns="http://www.w3.org/2000/svg"',l+=o.scalable?"":' width="'+g+'px" height="'+g+'px"',l+=' viewBox="0 0 '+g+" "+g+'" ',l+=' preserveAspectRatio="xMinYMin meet"',l+=n.text||e.text?' role="img" aria-labelledby="'+y([n.id,e.id].join(" ").trim())+'"':"",l+=">",l+=n.text?'<title id="'+y(n.id)+'">'+y(n.text)+"</title>":"",l+=e.text?'<description id="'+y(e.id)+'">'+y(e.text)+"</description>":"",l+='<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>',l+='<path d="',a=0;a<f.getModuleCount();a+=1)for(u=a*t+r,i=0;i<f.getModuleCount();i+=1)f.isDark(a,i)&&(l+="M"+(i*t+r)+","+u+c);return l+='" stroke="transparent" fill="black"/>',l+="</svg>"},f.createDataURL=function(t,r){t=t||2,r=void 0===r?4*t:r;var e=f.getModuleCount()*t+2*r,n=r,o=e-r;return I(e,e,function(r,e){if(n<=r&&r<o&&n<=e&&e<o){var i=Math.floor((r-n)/t),a=Math.floor((e-n)/t);return f.isDark(a,i)?0:1}return 1})},f.createImgTag=function(t,r,e){t=t||2,r=void 0===r?4*t:r;var n=f.getModuleCount()*t+2*r,o="";return o+="<img",o+=' src="',o+=f.createDataURL(t,r),o+='"',o+=' width="',o+=n,o+='"',o+=' height="',o+=n,o+='"',e&&(o+=' alt="',o+=y(e),o+='"'),o+="/>"};var y=function(t){for(var r="",e=0;e<t.length;e+=1){var n=t.charAt(e);switch(n){case"<":r+="&lt;";break;case">":r+="&gt;";break;case"&":r+="&amp;";break;case'"':r+="&quot;";break;default:r+=n}}return r};return f.createASCII=function(t,r){if((t=t||1)<2)return function(t){t=void 0===t?2:t;var r,e,n,o,i,a=1*f.getModuleCount()+2*t,u=t,c=a-t,g={"██":"█","█ ":"▀"," █":"▄","  ":" "},l={"██":"▀","█ ":"▀"," █":" ","  ":" "},h="";for(r=0;r<a;r+=2){for(n=Math.floor((r-u)/1),o=Math.floor((r+1-u)/1),e=0;e<a;e+=1)i="█",u<=e&&e<c&&u<=r&&r<c&&f.isDark(n,Math.floor((e-u)/1))&&(i=" "),u<=e&&e<c&&u<=r+1&&r+1<c&&f.isDark(o,Math.floor((e-u)/1))?i+=" ":i+="█",h+=t<1&&r+1>=c?l[i]:g[i];h+="\n"}return a%2&&t>0?h.substring(0,h.length-a-1)+Array(a+1).join("▀"):h.substring(0,h.length-1)}(r);t-=1,r=void 0===r?2*t:r;var e,n,o,i,a=f.getModuleCount()*t+2*r,u=r,c=a-r,g=Array(t+1).join("██"),l=Array(t+1).join("  "),h="",s="";for(e=0;e<a;e+=1){for(o=Math.floor((e-u)/t),s="",n=0;n<a;n+=1)i=1,u<=n&&n<c&&u<=e&&e<c&&f.isDark(o,Math.floor((n-u)/t))&&(i=0),s+=i?g:l;for(o=0;o<t;o+=1)h+=s+"\n"}return h.substring(0,h.length-1)},f.renderTo2dContext=function(t,r){r=r||2;for(var e=f.getModuleCount(),n=0;n<e;n++)for(var o=0;o<e;o++)t.fillStyle=f.isDark(n,o)?"black":"white",t.fillRect(n*r,o*r,r,r)},f};t.stringToBytes=(t.stringToBytesFuncs={default:function(t){for(var r=[],e=0;e<t.length;e+=1){var n=t.charCodeAt(e);r.push(255&n)}return r}}).default,t.createStringToBytes=function(t,r){var e=function(){for(var e=S(t),n=function(){var t=e.read();if(-1==t)throw"eof";return t},o=0,i={};;){var a=e.read();if(-1==a)break;var u=n(),f=n()<<8|n();i[String.fromCharCode(a<<8|u)]=f,o+=1}if(o!=r)throw o+" != "+r;return i}(),n="?".charCodeAt(0);return function(t){for(var r=[],o=0;o<t.length;o+=1){var i=t.charCodeAt(o);if(i<128)r.push(i);else{var a=e[t.charAt(o)];"number"==typeof a?(255&a)==a?r.push(a):(r.push(a>>>8),r.push(255&a)):r.push(n)}}return r}};var r,e,n,o,i,a=1,u=2,f=4,c=8,g={L:1,M:0,Q:3,H:2},l=0,h=1,s=2,v=3,d=4,w=5,p=6,y=7,B=(r=[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],e=1335,n=7973,i=function(t){for(var r=0;0!=t;)r+=1,t>>>=1;return r},(o={}).getBCHTypeInfo=function(t){for(var r=t<<10;i(r)-i(e)>=0;)r^=e<<i(r)-i(e);return 21522^(t<<10|r)},o.getBCHTypeNumber=function(t){for(var r=t<<12;i(r)-i(n)>=0;)r^=n<<i(r)-i(n);return t<<12|r},o.getPatternPosition=function(t){return r[t-1]},o.getMaskFunction=function(t){switch(t){case l:return function(t,r){return(t+r)%2==0};case h:return function(t,r){return t%2==0};case s:return function(t,r){return r%3==0};case v:return function(t,r){return(t+r)%3==0};case d:return function(t,r){return(Math.floor(t/2)+Math.floor(r/3))%2==0};case w:return function(t,r){return t*r%2+t*r%3==0};case p:return function(t,r){return(t*r%2+t*r%3)%2==0};case y:return function(t,r){return(t*r%3+(t+r)%2)%2==0};default:throw"bad maskPattern:"+t}},o.getErrorCorrectPolynomial=function(t){for(var r=k([1],0),e=0;e<t;e+=1)r=r.multiply(k([1,C.gexp(e)],0));return r},o.getLengthInBits=function(t,r){if(1<=r&&r<10)switch(t){case a:return 10;case u:return 9;case f:case c:return 8;default:throw"mode:"+t}else if(r<27)switch(t){case a:return 12;case u:return 11;case f:return 16;case c:return 10;default:throw"mode:"+t}else{if(!(r<41))throw"type:"+r;switch(t){case a:return 14;case u:return 13;case f:return 16;case c:return 12;default:throw"mode:"+t}}},o.getLostPoint=function(t){for(var r=t.getModuleCount(),e=0,n=0;n<r;n+=1)for(var o=0;o<r;o+=1){for(var i=0,a=t.isDark(n,o),u=-1;u<=1;u+=1)if(!(n+u<0||r<=n+u))for(var f=-1;f<=1;f+=1)o+f<0||r<=o+f||0==u&&0==f||a==t.isDark(n+u,o+f)&&(i+=1);i>5&&(e+=3+i-5)}for(n=0;n<r-1;n+=1)for(o=0;o<r-1;o+=1){var c=0;t.isDark(n,o)&&(c+=1),t.isDark(n+1,o)&&(c+=1),t.isDark(n,o+1)&&(c+=1),t.isDark(n+1,o+1)&&(c+=1),0!=c&&4!=c||(e+=3)}for(n=0;n<r;n+=1)for(o=0;o<r-6;o+=1)t.isDark(n,o)&&!t.isDark(n,o+1)&&t.isDark(n,o+2)&&t.isDark(n,o+3)&&t.isDark(n,o+4)&&!t.isDark(n,o+5)&&t.isDark(n,o+6)&&(e+=40);for(o=0;o<r;o+=1)for(n=0;n<r-6;n+=1)t.isDark(n,o)&&!t.isDark(n+1,o)&&t.isDark(n+2,o)&&t.isDark(n+3,o)&&t.isDark(n+4,o)&&!t.isDark(n+5,o)&&t.isDark(n+6,o)&&(e+=40);var g=0;for(o=0;o<r;o+=1)for(n=0;n<r;n+=1)t.isDark(n,o)&&(g+=1);return e+=Math.abs(100*g/r/r-50)/5*10},o),C=function(){for(var t=new Array(256),r=new Array(256),e=0;e<8;e+=1)t[e]=1<<e;for(e=8;e<256;e+=1)t[e]=t[e-4]^t[e-5]^t[e-6]^t[e-8];for(e=0;e<255;e+=1)r[t[e]]=e;var n={glog:function(t){if(t<1)throw"glog("+t+")";return r[t]},gexp:function(r){for(;r<0;)r+=255;for(;r>=256;)r-=255;return t[r]}};return n}();function k(t,r){if(void 0===t.length)throw t.length+"/"+r;var e=function(){for(var e=0;e<t.length&&0==t[e];)e+=1;for(var n=new Array(t.length-e+r),o=0;o<t.length-e;o+=1)n[o]=t[o+e];return n}(),n={getAt:function(t){return e[t]},getLength:function(){return e.length},multiply:function(t){for(var r=new Array(n.getLength()+t.getLength()-1),e=0;e<n.getLength();e+=1)for(var o=0;o<t.getLength();o+=1)r[e+o]^=C.gexp(C.glog(n.getAt(e))+C.glog(t.getAt(o)));return k(r,0)},mod:function(t){if(n.getLength()-t.getLength()<0)return n;for(var r=C.glog(n.getAt(0))-C.glog(t.getAt(0)),e=new Array(n.getLength()),o=0;o<n.getLength();o+=1)e[o]=n.getAt(o);for(o=0;o<t.getLength();o+=1)e[o]^=C.gexp(C.glog(t.getAt(o))+r);return k(e,0).mod(t)}};return n}var A=function(){var t=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12,7,37,13],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13],[4,151,121,5,152,122],[4,75,47,14,76,48],[11,54,24,14,55,25],[16,45,15,14,46,16],[6,147,117,4,148,118],[6,73,45,14,74,46],[11,54,24,16,55,25],[30,46,16,2,47,17],[8,132,106,4,133,107],[8,75,47,13,76,48],[7,54,24,22,55,25],[22,45,15,13,46,16],[10,142,114,2,143,115],[19,74,46,4,75,47],[28,50,22,6,51,23],[33,46,16,4,47,17],[8,152,122,4,153,123],[22,73,45,3,74,46],[8,53,23,26,54,24],[12,45,15,28,46,16],[3,147,117,10,148,118],[3,73,45,23,74,46],[4,54,24,31,55,25],[11,45,15,31,46,16],[7,146,116,7,147,117],[21,73,45,7,74,46],[1,53,23,37,54,24],[19,45,15,26,46,16],[5,145,115,10,146,116],[19,75,47,10,76,48],[15,54,24,25,55,25],[23,45,15,25,46,16],[13,145,115,3,146,116],[2,74,46,29,75,47],[42,54,24,1,55,25],[23,45,15,28,46,16],[17,145,115],[10,74,46,23,75,47],[10,54,24,35,55,25],[19,45,15,35,46,16],[17,145,115,1,146,116],[14,74,46,21,75,47],[29,54,24,19,55,25],[11,45,15,46,46,16],[13,145,115,6,146,116],[14,74,46,23,75,47],[44,54,24,7,55,25],[59,46,16,1,47,17],[12,151,121,7,152,122],[12,75,47,26,76,48],[39,54,24,14,55,25],[22,45,15,41,46,16],[6,151,121,14,152,122],[6,75,47,34,76,48],[46,54,24,10,55,25],[2,45,15,64,46,16],[17,152,122,4,153,123],[29,74,46,14,75,47],[49,54,24,10,55,25],[24,45,15,46,46,16],[4,152,122,18,153,123],[13,74,46,32,75,47],[48,54,24,14,55,25],[42,45,15,32,46,16],[20,147,117,4,148,118],[40,75,47,7,76,48],[43,54,24,22,55,25],[10,45,15,67,46,16],[19,148,118,6,149,119],[18,75,47,31,76,48],[34,54,24,34,55,25],[20,45,15,61,46,16]],r=function(t,r){var e={};return e.totalCount=t,e.dataCount=r,e},e={};return e.getRSBlocks=function(e,n){var o=function(r,e){switch(e){case g.L:return t[4*(r-1)+0];case g.M:return t[4*(r-1)+1];case g.Q:return t[4*(r-1)+2];case g.H:return t[4*(r-1)+3];default:return}}(e,n);if(void 0===o)throw"bad rs block @ typeNumber:"+e+"/errorCorrectionLevel:"+n;for(var i=o.length/3,a=[],u=0;u<i;u+=1)for(var f=o[3*u+0],c=o[3*u+1],l=o[3*u+2],h=0;h<f;h+=1)a.push(r(c,l));return a},e}(),b=function(){var t=[],r=0,e={getBuffer:function(){return t},getAt:function(r){var e=Math.floor(r/8);return 1==(t[e]>>>7-r%8&1)},put:function(t,r){for(var n=0;n<r;n+=1)e.putBit(1==(t>>>r-n-1&1))},getLengthInBits:function(){return r},putBit:function(e){var n=Math.floor(r/8);t.length<=n&&t.push(0),e&&(t[n]|=128>>>r%8),r+=1}};return e},M=function(t){var r=a,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+2<r.length;)t.put(o(r.substring(n,n+3)),10),n+=3;n<r.length&&(r.length-n==1?t.put(o(r.substring(n,n+1)),4):r.length-n==2&&t.put(o(r.substring(n,n+2)),7))}},o=function(t){for(var r=0,e=0;e<t.length;e+=1)r=10*r+i(t.charAt(e));return r},i=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);throw"illegal char :"+t};return n},x=function(t){var r=u,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+1<r.length;)t.put(45*o(r.charAt(n))+o(r.charAt(n+1)),11),n+=2;n<r.length&&t.put(o(r.charAt(n)),6)}},o=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);if("A"<=t&&t<="Z")return t.charCodeAt(0)-"A".charCodeAt(0)+10;switch(t){case" ":return 36;case"$":return 37;case"%":return 38;case"*":return 39;case"+":return 40;case"-":return 41;case".":return 42;case"/":return 43;case":":return 44;default:throw"illegal char :"+t}};return n},m=function(r){var e=f,n=t.stringToBytes(r),o={getMode:function(){return e},getLength:function(t){return n.length},write:function(t){for(var r=0;r<n.length;r+=1)t.put(n[r],8)}};return o},L=function(r){var e=c,n=t.stringToBytesFuncs.SJIS;if(!n)throw"sjis not supported.";!function(){var t=n("友");if(2!=t.length||38726!=(t[0]<<8|t[1]))throw"sjis not supported."}();var o=n(r),i={getMode:function(){return e},getLength:function(t){return~~(o.length/2)},write:function(t){for(var r=o,e=0;e+1<r.length;){var n=(255&r[e])<<8|255&r[e+1];if(33088<=n&&n<=40956)n-=33088;else{if(!(57408<=n&&n<=60351))throw"illegal char at "+(e+1)+"/"+n;n-=49472}n=192*(n>>>8&255)+(255&n),t.put(n,13),e+=2}if(e<r.length)throw"illegal char at "+(e+1)}};return i},D=function(){var t=[],r={writeByte:function(r){t.push(255&r)},writeShort:function(t){r.writeByte(t),r.writeByte(t>>>8)},writeBytes:function(t,e,n){e=e||0,n=n||t.length;for(var o=0;o<n;o+=1)r.writeByte(t[o+e])},writeString:function(t){for(var e=0;e<t.length;e+=1)r.writeByte(t.charCodeAt(e))},toByteArray:function(){return t},toString:function(){var r="";r+="[";for(var e=0;e<t.length;e+=1)e>0&&(r+=","),r+=t[e];return r+="]"}};return r},S=function(t){var r=t,e=0,n=0,o=0,i={read:function(){for(;o<8;){if(e>=r.length){if(0==o)return-1;throw"unexpected end of file./"+o}var t=r.charAt(e);if(e+=1,"="==t)return o=0,-1;t.match(/^\s$/)||(n=n<<6|a(t.charCodeAt(0)),o+=6)}var i=n>>>o-8&255;return o-=8,i}},a=function(t){if(65<=t&&t<=90)return t-65;if(97<=t&&t<=122)return t-97+26;if(48<=t&&t<=57)return t-48+52;if(43==t)return 62;if(47==t)return 63;throw"c:"+t};return i},I=function(t,r,e){for(var n=function(t,r){var e=t,n=r,o=new Array(t*r),i={setPixel:function(t,r,n){o[r*e+t]=n},write:function(t){t.writeString("GIF87a"),t.writeShort(e),t.writeShort(n),t.writeByte(128),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(255),t.writeByte(255),t.writeByte(255),t.writeString(","),t.writeShort(0),t.writeShort(0),t.writeShort(e),t.writeShort(n),t.writeByte(0);var r=a(2);t.writeByte(2);for(var o=0;r.length-o>255;)t.writeByte(255),t.writeBytes(r,o,255),o+=255;t.writeByte(r.length-o),t.writeBytes(r,o,r.length-o),t.writeByte(0),t.writeString(";")}},a=function(t){for(var r=1<<t,e=1+(1<<t),n=t+1,i=u(),a=0;a<r;a+=1)i.add(String.fromCharCode(a));i.add(String.fromCharCode(r)),i.add(String.fromCharCode(e));var f,c,g,l=D(),h=(f=l,c=0,g=0,{write:function(t,r){if(t>>>r!=0)throw"length over";for(;c+r>=8;)f.writeByte(255&(t<<c|g)),r-=8-c,t>>>=8-c,g=0,c=0;g|=t<<c,c+=r},flush:function(){c>0&&f.writeByte(g)}});h.write(r,n);var s=0,v=String.fromCharCode(o[s]);for(s+=1;s<o.length;){var d=String.fromCharCode(o[s]);s+=1,i.contains(v+d)?v+=d:(h.write(i.indexOf(v),n),i.size()<4095&&(i.size()==1<<n&&(n+=1),i.add(v+d)),v=d)}return h.write(i.indexOf(v),n),h.write(e,n),h.flush(),l.toByteArray()},u=function(){var t={},r=0,e={add:function(n){if(e.contains(n))throw"dup key:"+n;t[n]=r,r+=1},size:function(){return r},indexOf:function(r){return t[r]},contains:function(r){return void 0!==t[r]}};return e};return i}(t,r),o=0;o<r;o+=1)for(var i=0;i<t;i+=1)n.setPixel(i,o,e(i,o));var a=D();n.write(a);for(var u=function(){var t=0,r=0,e=0,n="",o={},i=function(t){n+=String.fromCharCode(a(63&t))},a=function(t){if(t<0);else{if(t<26)return 65+t;if(t<52)return t-26+97;if(t<62)return t-52+48;if(62==t)return 43;if(63==t)return 47}throw"n:"+t};return o.writeByte=function(n){for(t=t<<8|255&n,r+=8,e+=1;r>=6;)i(t>>>r-6),r-=6},o.flush=function(){if(r>0&&(i(t<<6-r),t=0,r=0),e%3!=0)for(var o=3-e%3,a=0;a<o;a+=1)n+="="},o.toString=function(){return n},o}(),f=a.toByteArray(),c=0;c<f.length;c+=1)u.writeByte(f[c]);return u.flush(),"data:image/gif;base64,"+u};return t}();return t.stringToBytesFuncs["UTF-8"]=function(t){return function(t){for(var r=[],e=0;e<t.length;e++){var n=t.charCodeAt(e);n<128?r.push(n):n<2048?r.push(192|n>>6,128|63&n):n<55296||n>=57344?r.push(224|n>>12,128|n>>6&63,128|63&n):(e++,n=65536+((1023&n)<<10|1023&t.charCodeAt(e)),r.push(240|n>>18,128|n>>12&63,128|n>>6&63,128|63&n))}return r}(t)},t}();
+function qrSvg(text){
+  const qr = QRLib(0, "M"); qr.addData(text); qr.make();
+  const n = qr.getModuleCount(), q = 4, size = n + 2 * q;
+  let d = "";
+  for(let r = 0; r < n; r++) for(let c = 0; c < n; c++) if(qr.isDark(r, c)) d += "M" + (c + q) + " " + (r + q) + "h1v1h-1z";
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + size + ' ' + size + '" shape-rendering="crispEdges" role="img" aria-label="QR code for this page">' +
+         '<rect width="' + size + '" height="' + size + '" fill="#fff"/><path d="' + d + '" fill="#000"/></svg>';
+}
+function renderShare(){
+  const published = /^https?:$/.test(location.protocol);
+  const url = published ? location.origin + location.pathname : "";
+  $("qrBox").innerHTML = published ? qrSvg(url) : "";
+  $("shareUrl").textContent = published
+    ? url + "  (point a phone camera at the code; put it on a slide)"
+    : "This copy runs from a file, so it has no web address yet. Publish it (see README) and open that address to get a QR code here.";
+}
+
+/* ---------- The big pass timer ---------- */
+const clamp01 = x => Math.max(0, Math.min(1, x));
+function clockOfSec(sec){
+  sec = Math.round(sec / 60) * 60;
+  return fmtClock(pad2(Math.floor(sec / 3600)) + ":" + pad2(Math.floor((sec % 3600) / 60)));
+}
+function windowLegend(a, b){
+  if(a > 0 && b > 0) return a === b ? "Passes are closed in the first and last " + a + " minutes of class." : "Passes are closed in the first " + a + " and last " + b + " minutes of class.";
+  if(a > 0) return "Passes are closed in the first " + a + " minutes of class.";
+  if(b > 0) return "Passes are closed in the last " + b + " minutes of class.";
+  return "";
+}
+function heroModel(now, info){
+  const m = { state: "none", stateText: "", title: "", sub: "", count: "", legend: "", badge: "", bar: null };
+  const rows = rowsFor(settings.activeBand, info.timeType);
+  const iso = toISO(now);
+  const nowSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+  const P = settings.pass;
+  if(rows.length === 0){
+    const nd = nextSchoolDay(iso);
+    m.title = "No school today"; m.stateText = "NO SCHOOL";
+    m.sub = nd ? "Back to school " + (nd === addDaysISO(iso, 1) ? "tomorrow" : "on " + dayName(nd, false)) : "Enjoy the break";
+    return m;
+  }
+  const idx = rows.findIndex(r => nowSec >= rowStartSec(r) && nowSec < rowEndSec(r));
+  const first = rows[0], last = rows[rows.length - 1];
+  const solid = (k, f, left, right) => ({ f: clamp01(f), zones: [{ w: 1, k }], marks: [], left, right });
+  if(idx < 0 && nowSec < rowStartSec(first)){
+    const s = rowStartSec(first), a = Math.min(minutesSinceMidnight(settings.dayStart) * 60, s - 60);
+    m.title = "Before classes"; m.sub = "First bell at " + fmtClock(first.start);
+    m.stateText = "CLASSES SOON"; m.count = "first bell in " + fmtDur(s - nowSec);
+    m.bar = solid("none", (nowSec - a) / (s - a), clockOfSec(a), fmtClock(first.start));
+    return m;
+  }
+  if(idx < 0){
+    m.title = "School is over"; m.sub = nextDayText(iso); m.stateText = "SCHOOL IS OUT";
+    m.bar = solid("none", 1, fmtClock(first.start), fmtClock(last.end));
+    return m;
+  }
+  const row = rows[idx], s = rowStartSec(row), e = rowEndSec(row), len = e - s, f = (nowSec - s) / len;
+  if(row.type !== "class"){
+    const nx = rows.slice(idx + 1).find(r => r.type !== "break");
+    m.state = "break"; m.stateText = row.type === "lunch" ? "LUNCH" : "BREAK";
+    m.title = row.type === "lunch" ? "Lunch" : "Passing period";
+    m.sub = nx ? "Next: " + nx.label + " at " + fmtClock(nx.start) : "Last bell at " + fmtClock(row.end);
+    m.count = nx ? nx.label + " in " + fmtDur(rowStartSec(nx) - nowSec) : "";
+    m.bar = solid("break", f, fmtClock(row.start), fmtClock(row.end));
+    return m;
+  }
+  m.title = row.label;
+  m.sub = (settings.stage.phases ? lessonPhase(row, nowSec).name + " · " : "") + "until " + fmtClock(row.end);
+  const A = Number(P.closedStartMin) || 0, Bm = Number(P.closedEndMin) || 0;
+  if(!P.useWindow || (A <= 0 && Bm <= 0)){
+    m.state = "open"; m.stateText = "PASSES OPEN"; m.count = "class ends in " + fmtDur(e - nowSec);
+    m.bar = solid("open", f, fmtClock(row.start), fmtClock(row.end));
+    return m;
+  }
+  const a = A * 60, b = Bm * 60, openAt = s + a, closeAt = e - b;
+  m.badge = A + "/" + Bm + " rule"; m.legend = windowLegend(A, Bm);
+  if(closeAt <= openAt){
+    m.state = "closed"; m.stateText = "PASSES CLOSED"; m.count = "class ends in " + fmtDur(e - nowSec);
+    m.bar = solid("closed", f, fmtClock(row.start), fmtClock(row.end));
+    return m;
+  }
+  if(nowSec < openAt){ m.state = "closed"; m.stateText = "PASSES CLOSED"; m.count = "opens in " + fmtDur(openAt - nowSec); }
+  else if(nowSec < closeAt){ m.state = "open"; m.stateText = "PASSES OPEN"; m.count = "closes in " + fmtDur(closeAt - nowSec); }
+  else { m.state = "closed"; m.stateText = "PASSES CLOSED"; m.count = "class ends in " + fmtDur(e - nowSec); }
+  const zones = [], marks = [];
+  if(a > 0) zones.push({ w: a / len, k: "closed" });
+  zones.push({ w: (closeAt - openAt) / len, k: "open" });
+  if(b > 0) zones.push({ w: b / len, k: "closed" });
+  if(a > 0) marks.push({ f: a / len, t: "opens " + clockOfSec(openAt) });
+  if(b > 0) marks.push({ f: 1 - b / len, t: "closes " + clockOfSec(closeAt) });
+  m.bar = { f: clamp01(f), zones, marks, left: fmtClock(row.start), right: fmtClock(row.end) };
+  return m;
+}
+let heroSig = "", heroFitSig = "";
+function fitHeroText(){              // the pass state and the countdown always stay on ONE line, however narrow the screen
+  ["phState", "phCount"].forEach(id => {
+    const e = $(id);
+    if(e.classList.contains("hidden")) return;
+    e.style.fontSize = "";
+    let fs = parseFloat(getComputedStyle(e).fontSize) || 40;
+    for(let n = 0; n < 40 && e.scrollWidth > e.clientWidth + 1 && fs > 12; n++){ fs -= 2; e.style.fontSize = fs + "px"; }
+  });
+}
+window.addEventListener("resize", () => { heroFitSig = ""; });
+function renderHero(m){
+  setIfChanged("phTitle", m.title || "\u00a0");
+  setIfChanged("phSub", m.sub);
+  setIfChanged("phState", m.stateText);
+  setIfChanged("phCount", m.count);
+  setIfChanged("phLegend", m.legend);
+  setIfChanged("phBadge", m.badge);
+  $("phBadge").classList.toggle("hidden", !m.badge);
+  $("phState").classList.toggle("hidden", !m.stateText);
+  $("phCount").classList.toggle("hidden", !m.count);
+  $("passHero").setAttribute("data-state", m.state);
+  const fitSig = m.stateText + "|" + m.count.length + "|" + window.innerWidth + "x" + window.innerHeight;
+  if(fitSig !== heroFitSig){ heroFitSig = fitSig; fitHeroText(); }
+  const wrap = $("phBarWrap");
+  if(!m.bar){ wrap.classList.add("hidden"); return; }
+  wrap.classList.remove("hidden");
+  const sig = JSON.stringify([m.bar.zones, m.bar.marks, m.bar.left, m.bar.right]);
+  if(sig !== heroSig){
+    heroSig = sig;
+    $("phZones").innerHTML = m.bar.zones.map(z => '<i class="z ' + z.k + '" style="width:' + (z.w * 100).toFixed(3) + '%"></i>').join("") + '<b class="ph-elapsed" id="phElapsed"></b>';
+    $("phMarks").innerHTML = '<span class="m0">' + esc(m.bar.left) + '</span>' +
+      m.bar.marks.map(k => '<span class="k" style="left:' + (k.f * 100).toFixed(3) + '%">' + esc(k.t) + '</span>').join("") +
+      '<span class="m1">' + esc(m.bar.right) + '</span>';
+  }
+  const pct = (m.bar.f * 100).toFixed(3) + "%";
+  $("phElapsed").style.width = pct;
+  $("phNow").style.left = pct;
+}
+
+/* ---------- Extras: what is switched on besides the basic screen ---------- */
+const EXTRA_TOGGLES = { exHallPass: "hallPass", exDing: "ding", exSounds: "sounds", exCards: "cards" };
+function syncExtrasUI(){ Object.keys(EXTRA_TOGGLES).forEach(id => { $(id).checked = !!settings.extras[EXTRA_TOGGLES[id]]; }); }
+function syncTopRow(){
+  const chipShown = !$("wxChip").classList.contains("hidden");
+  $("ambientTop").classList.toggle("hidden", !(settings.extras.cards || chipShown));
+}
+function syncSettingsVisibility(){
+  document.querySelectorAll("#settingsBody .section[data-needs]").forEach(sec => {
+    sec.classList.toggle("hidden", !settings.extras[sec.getAttribute("data-needs")]);
+  });
+}
+function applyExtras(){
+  const x = settings.extras;
+  $("ambient").setAttribute("data-cards", x.cards ? "1" : "0");
+  $("hpPanel").classList.toggle("hidden", !(x.hallPass || x.ding));
+  $("passSlots").classList.toggle("hidden", !x.hallPass);
+  $("ringDistractorBtn").classList.toggle("hidden", !x.ding);
+  syncTopRow();
+  syncSettingsVisibility();
+  stageReset();
+}
+Object.keys(EXTRA_TOGGLES).forEach(id => {
+  $(id).addEventListener("change", e => {
+    settings.extras[EXTRA_TOGGLES[id]] = e.target.checked;
+    saveSettings(); applyExtras(); refreshAll();
+  });
+});
+function applyPreset(full){
+  const x = settings.extras, st = settings.stage, n = settings.notify;
+  x.hallPass = x.ding = x.sounds = x.cards = full;
+  st.phases = st.weather = st.alerts = full;
+  if(full){ st.arc = st.facts = st.riddles = st.messages = st.calendar = true; }
+  else { n.n15 = n.n10 = n.n5 = n.customMinEnabled = n.ringBell = false; }
+  $("notify15").checked = !!n.n15; $("notify10").checked = !!n.n10; $("notify5").checked = !!n.n5;
+  $("notifyCustomEnabled").checked = !!n.customMinEnabled; $("ringBellEnabled").checked = !!n.ringBell;
+  saveSettings(); syncExtrasUI(); syncStageSettingsUI(); renderWeatherChip(); applyExtras();
+  if(full){ fetchWeather(); fetchAlerts(); } else { WX.alerts = []; renderAlertBanner(); }
+  refreshAll();
+}
+$("presetBasic").addEventListener("click", () => applyPreset(false));
+$("presetFull").addEventListener("click", () => applyPreset(true));
+$("helpBtn").addEventListener("click", () => $("helpModal").classList.remove("hidden"));
+$("helpCloseBtn").addEventListener("click", () => $("helpModal").classList.add("hidden"));
+
+/* ---------- Welcome (first start on a device) ---------- */
+const DEMO_PARAM = /[?&]demo=1(&|$)/.test(location.search);
+let welBand = "1011";
+function drawWelcomeBands(){
+  const box = $("welBands"); box.innerHTML = "";
+  Object.keys(BAND_LABELS).forEach(b => {
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.textContent = BAND_LABELS[b];
+    if(b === welBand) btn.classList.add("active");
+    btn.onclick = () => { welBand = b; drawWelcomeBands(); };
+    box.appendChild(btn);
+  });
+}
+function renderWelcome(){
+  welBand = settings.activeBand;
+  drawWelcomeBands();
+  $("welClosedStart").value = settings.pass.closedStartMin;
+  $("welClosedEnd").value = settings.pass.closedEndMin;
+}
+function maybeWelcome(){
+  if(settings.setupDone || DEMO.on || DEMO_PARAM) return;
+  renderWelcome();
+  $("welErr").textContent = "";
+  $("welPin").value = "";
+  $("welcome").classList.remove("hidden");
+}
+$("welStart").addEventListener("click", () => {
+  const pin = $("welPin").value.trim();
+  if(!/^\d{4,8}$/.test(pin)){ $("welErr").textContent = "Please choose a PIN of 4 to 8 digits. You will need it to open the settings."; return; }
+  settings.activeBand = welBand;
+  settings.pass.closedStartMin = clampInt($("welClosedStart").value, 0, 60, 10);
+  settings.pass.closedEndMin = clampInt($("welClosedEnd").value, 0, 60, 10);
+  settings.pass.useWindow = settings.pass.closedStartMin > 0 || settings.pass.closedEndMin > 0;
+  settings.pin = pin;
+  settings.setupDone = true;
+  saveSettings();
+  $("welcome").classList.add("hidden");
+  syncPassSettingsUI();
+  refreshAll();
+});
+
+/* ---------- Demo: a pretend school day on a fast clock ---------- */
+function demoDay(){
+  const iso = toISO(new Date());
+  const d = CALENDAR[iso] ? iso : (nextSchoolDay(iso) || SCHOOL_DAYS[0]);
+  const [y, m, dd] = d.split("-").map(Number);
+  return { iso: d, y, m, d: dd };
+}
+function demoRows(day){ return rowsFor(settings.activeBand, effectiveBandInfo(settings.activeBand, day.iso).timeType); }
+function demoSetTime(sec){
+  const day = demoDay();
+  DEMO.baseSim = new Date(day.y, day.m - 1, day.d, 0, 0, 0).getTime() + sec * 1000;
+  DEMO.baseReal = Date.now();
+}
+function demoSetSpeed(v){
+  DEMO.baseSim = appNow().getTime(); DEMO.baseReal = Date.now(); DEMO.speed = v;
+  updateDemoBar(appNow());
+}
+function demoStart(){
+  if(DEMO.on) return;
+  DEMO.backup = JSON.parse(JSON.stringify({ active: settings.pass.active, queue: settings.pass.queue, recent: settings.pass.recent, overrides: settings.overrides }));
+  DEMO.on = true; DEMO.speed = 1;
+  const rows = demoRows(demoDay());
+  demoSetTime((rows.length ? rowStartSec(rows[0]) : 7.5 * 3600) - 120);
+  $("demoBar").classList.remove("hidden");
+  $("welcome").classList.add("hidden");
+  firedNotifications = {}; stageReset();
+  refreshAll();
+  updateDemoBar(appNow());
+}
+function demoStop(){
+  if(!DEMO.on) return;
+  const b = DEMO.backup;
+  DEMO.on = false;
+  if(b){ settings.pass.active = b.active; settings.pass.queue = b.queue; settings.pass.recent = b.recent; settings.overrides = b.overrides; }
+  DEMO.backup = null;
+  $("demoBar").classList.add("hidden");
+  saveSettings(); renderHallPass(); renderPassLogUI(); firedNotifications = {}; stageReset(); refreshAll();
+  syncTime().then(refreshAll);
+}
+function demoJump(kind){
+  const day = demoDay(), rows = demoRows(day);
+  if(!rows.length) return;
+  const periods = rows.filter(r => r.type === "class" && /^Period/i.test(r.label));
+  const c = periods[1] || periods[0] || rows.find(r => r.type === "class") || rows[0];
+  const A = settings.pass.useWindow ? settings.pass.closedStartMin * 60 : 0, B = settings.pass.useWindow ? settings.pass.closedEndMin * 60 : 0;
+  let t;
+  switch(kind){
+    case "start":   t = rowStartSec(rows[0]) - 120; break;
+    case "opens":   t = rowStartSec(c) + A - 15; break;
+    case "closing": t = rowEndSec(c) - B - 15; break;
+    case "bell":    t = rowEndSec(c) - 8; break;
+    case "break":   { const r = rows.find(x => x.type === "break"); t = r ? rowStartSec(r) + 10 : rowEndSec(c) + 10; break; }
+    case "lunch":   { const r = rows.find(x => x.type === "lunch"); t = r ? rowStartSec(r) + 10 : rowEndSec(c) + 10; break; }
+    default:        t = rowEndSec(rows[rows.length - 1]) + 10;
+  }
+  DEMO.speed = 1;
+  demoSetTime(t);
+  firedNotifications = {};
+  refreshAll();
+  updateDemoBar(appNow());
+}
+function updateDemoBar(now){
+  if(!DEMO.on) return;
+  $("demoClock").textContent = $("clockTime").textContent;
+  const cs = $("clockSync"); if(cs && cs.textContent !== "DEMO · simulated time") cs.textContent = "DEMO · simulated time";
+  Array.from($("demoSpeeds").children).forEach(b => b.classList.toggle("on", Number(b.dataset.speed) === DEMO.speed));
+}
+$("demoSpeeds").addEventListener("click", e => { const b = e.target.closest("[data-speed]"); if(b) demoSetSpeed(Number(b.dataset.speed)); });
+$("demoJumps").addEventListener("click", e => { const b = e.target.closest("[data-jump]"); if(b) demoJump(b.dataset.jump); });
+$("demoExit").addEventListener("click", demoStop);
+$("demoStartBtn").addEventListener("click", () => { $("settingsModal").classList.add("hidden"); demoStart(); });
+
+
+
+/* ---------- Works offline and updates itself (only when the page is served from a web address) ---------- */
+let updateReady = false;
+const onWeb = /^https?:$/.test(location.protocol);
+function updateStatus(){
+  const note = $("updateNote"), row = $("updateRow");
+  if(!onWeb){ note.textContent = ""; row.classList.add("hidden"); return; }
+  note.textContent = updateReady ? "A new version is ready. It will load by itself after school, or you can load it now."
+                                 : ("serviceWorker" in navigator ? "This board is up to date." : "");
+  row.classList.toggle("hidden", !updateReady);
+}
+function maybeApplyUpdate(){
+  if(!updateReady || DEMO.on) return;
+  if((settings.pass.active || []).some(Boolean)) return;                  // a student is out: not now
+  const now = appNow(), nowSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+  const rows = rowsFor(settings.activeBand, effectiveBandInfo(settings.activeBand, toISO(now)).timeType);
+  const inSchool = rows.length > 0 && nowSec >= rowStartSec(rows[0]) - 600 && nowSec <= rowEndSec(rows[rows.length - 1]);
+  if(!inSchool) location.reload();
+}
+async function checkForUpdate(){            // asks the web server for the newest page; the service worker also saves it for next time
+  if(!onWeb) return false;
+  try {
+    const r = await fetch("index.html?fresh=" + Date.now(), { cache: "no-store" });
+    if(!r.ok) return false;
+    const m = /const APP_VERSION = "([^"]+)"/.exec(await r.text());
+    if(m && m[1] !== APP_VERSION){ updateReady = true; updateStatus(); return true; }
+  } catch(e){ /* offline: nothing to check */ }
+  return false;
+}
+if(onWeb && "serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+  setTimeout(checkForUpdate, 6000);
+  setInterval(checkForUpdate, 30 * 60000);
+  setInterval(maybeApplyUpdate, 60000);
+}
+$("reloadNowBtn").addEventListener("click", () => location.reload());
+updateStatus();
 
 /* ================= Init: wire up controls ================= */
 /* ================= Init: wire up controls (flat & synchronous — always runs, no matter what) ================= */
@@ -3463,7 +4026,11 @@ syncTime().then(refreshAll); // refine once synced (or confirmed offline), doesn
   fetchAlerts();
   renderOffsetDisplay();
   document.body.setAttribute("data-theme", settings.theme);
+  syncExtrasUI();
+  applyExtras();
   refreshAll();
+  maybeWelcome();
+  if(DEMO_PARAM) demoStart();
 })();
 </script>
 </body>
